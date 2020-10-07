@@ -1,0 +1,74 @@
+{
+  "name": "proton-state-examples",
+  "version": "0.1.1",
+  "description": "Auto created by metadata Lists and Forms",
+  "author": "ptrushin",
+  "keywords": [
+    "ui",
+    "aggrid",
+    "grid",
+    "filter",
+    "odata"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ptrushin/proton-state.git"
+  },
+  "license": "MIT",
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "main": "dist/index.js",
+  "dependencies": {
+    "ag-grid-community": "^24.0.0",
+    "ag-grid-enterprise": "^24.0.0",
+    "ag-grid-odata": "^1.0.10",
+    "ag-grid-react": "^24.0.0",
+    "antd": "^4.6.6",
+    "moment": "^2.29.1",
+    "proton-state": "^0.1.1",
+    "react": "^16.13.1",
+    "react-dom": "^16.13.1",
+    "react-router-dom": "^5.2.0",
+    "react-scripts": "3.4.3"
+  },
+  "scripts": {
+    "start": "react-scripts start",
+    "build": "react-scripts build",
+    "build:npm": "cross-env NODE_ENV=production && rm -rf dist && mkdir dist && npx babel src/lib --out-dir dist --copy-files",
+    "test": "react-scripts test",
+    "eject": "react-scripts eject",
+    "prepublishOnly": "npm run build:npm"
+  },
+  "eslintConfig": {
+    "extends": "react-app"
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  },
+  "devDependencies": {},
+  "private": false,
+  "babel": {
+    "presets": [
+      "@babel/react"
+    ],
+    "plugins": [
+      [
+        "@babel/plugin-proposal-class-properties",
+        {
+          "loose": true
+        }
+      ]
+    ]
+  }
+}

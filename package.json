@@ -21,7 +21,7 @@
     "ag-grid-react": "^24.0.0",
     "antd": "^4.6.6",
     "moment": "^2.29.1",
-    "proton-state": "^0.1.1",
+    "proton-state": "^0.1.3",
     "react": "^16.13.1",
     "react-dom": "^16.13.1",
     "react-router-dom": "^5.2.0",

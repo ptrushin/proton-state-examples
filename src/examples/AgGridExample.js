@@ -8,6 +8,7 @@ import 'ag-grid-community/dist/styles/ag-theme-balham.css';
 import moment from "moment";
 import {ProtonState, AgGridStateProvider, FilterPanel, AntTagFilterPanelStateProvider} from 'proton-state';
 //import {localeText} from 'proton-state/dist/antd-tag-filter-panel/locale/ru'
+import {date2Def} from "./FilterDate2";
 
 export class AgGridExample extends PureComponent {
     constructor(props) {
@@ -33,6 +34,10 @@ export class AgGridExample extends PureComponent {
             filterDefs: [
                 {
                     name: 'OrderDate', title: 'OrderDate', type: 'date',
+                    fieldName: 'Order/OrderDate'
+                },
+                {
+                    name: 'OrderDateCustom', title: 'OrderDateCustom', type: 'date2',
                     fieldName: 'Order/OrderDate'
                 },
                 {
@@ -71,9 +76,9 @@ export class AgGridExample extends PureComponent {
                     //fetch: ({url}) => 
                 }
             },
-            /*filterTypes: {
-
-            }*/
+            filterTypes: {
+                date2: date2Def
+            }
         }
 
         this.protonState = new ProtonState(

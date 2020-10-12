@@ -3,10 +3,11 @@ import { withRouter } from "react-router-dom";
 import OdataProvider from "ag-grid-odata";
 import { AllModules } from "ag-grid-enterprise";
 import { AgGridReact } from 'ag-grid-react';
+import { Switch } from 'antd';
 import 'ag-grid-community/dist/styles/ag-grid.css';
 import 'ag-grid-community/dist/styles/ag-theme-balham.css';
 import moment from "moment";
-import {ProtonState, AgGridStateProvider, FilterPanel, AntTagFilterPanelStateProvider} from 'proton-state';
+import {ProtonState, AgGridStateProvider, FilterPanel, AntTagFilterPanelStateProvider, oDataDataSource} from 'proton-state';
 //import {localeText} from 'proton-state/dist/antd-tag-filter-panel/locale/ru'
 import {date2Def} from "./FilterDate2";
 
@@ -37,7 +38,7 @@ export class AgGridExample extends PureComponent {
                     fieldName: 'Order/OrderDate'
                 },
                 {
-                    name: 'OrderDateCustom', title: 'OrderDateCustom', type: 'date2',
+                    name: 'OrderDate2', title: 'OrderDate2', type: 'date2',
                     fieldName: 'Order/OrderDate'
                 },
                 {
@@ -47,8 +48,8 @@ export class AgGridExample extends PureComponent {
                         key: 'CategoryID',
                         label: 'CategoryName',
                     },
-                    dataSource: {entityName: 'Categories'}
-                    
+                    dataSource: { entityName: 'Categories' }
+
                 },
                 {
                     name: 'Product', title: 'Product', type: 'select',
@@ -64,7 +65,7 @@ export class AgGridExample extends PureComponent {
                     dataSource: {
                         //name: 'odata',
                         entityName: 'Products',
-                        filter: ({filters}) => !filters.Category ? null : `CategoryID eq ${filters.Category}`
+                        filter: ({ filters }) => !filters.Category ? null : `CategoryID eq ${filters.Category}`
                         //searchFields: ['Name', "Code"]
                     }
                 }
@@ -84,30 +85,35 @@ export class AgGridExample extends PureComponent {
         this.protonState = new ProtonState(
             {
                 history: props.history,
-                onChange: this.onStateChange
+                onChange: this.onStateChange,
+                rootComponent: this,
+                externalFilterDefs: [
+                    {
+                        name: 'unitPriceGt20',
+                        dataSources: { odata: { filter: ({ filterDef, value }) => value ? `UnitPrice gt 20` : undefined } },
+                        serialize: ({ filterDef, value }) => value ? 'true' : undefined,
+                        deserialize: ({ filterDef, value }) => value === 'true',
+                    }
+                ]
             });
     }
 
 
     componentDidMount() {
-        this.updateFilterValuesByLocationSearch();
+        if (this.protonState) this.protonState.updateState();
     }
 
     componentDidUpdate() {
-        this.updateFilterValuesByLocationSearch();
+        if (this.protonState) this.protonState.updateState();
     }
-
-    updateFilterValuesByLocationSearch = () => {
-        if (this.protonState) this.protonState.updateStateFromUrl();
-    }
-
+    
     onFilterReady = (api) => {
         this.filterApi = api;
-        this.protonState.addStateProvider(new AntTagFilterPanelStateProvider({api: api}))
+        this.protonState.addStateProvider(new AntTagFilterPanelStateProvider({ api: api }))
     }
 
     onStateChange = (props) => {
-        let {stateProvider} = props;
+        let { stateProvider } = props;
         if (!stateProvider || stateProvider.api !== this.gridApi) this.gridApi.purgeServerSideCache([]);
     }
 
@@ -137,10 +143,18 @@ export class AgGridExample extends PureComponent {
                 ,
                 beforeRequest: (query) => {
                     query.expand = ["Order($expand=Customer)", "Product"];
-                    let filters = this.filterApi.dataSourceTypes.odata.instance.getFilters({
+                    let filters = [];
+                    // filterApi
+                    filters = [...filters, ...this.filterApi.dataSourceTypes.odata.instance.getFilters({
                         filterDefs: this.filterApi.getFullFilterDefs(),
                         filters: this.filterApi.getFilters()
-                    })
+                    })]
+                    // exteralFilters
+                    filters = [...filters, ...oDataDataSource.getFilters({
+                        filterDefs: this.protonState.externalStateProvider.filterDefs,
+                        filters: this.protonState.externalStateProvider.filterValues
+                    })]
+
                     if (filters.length > 0) query.filter = filters;
                 }
             })
@@ -151,6 +165,7 @@ export class AgGridExample extends PureComponent {
         return (
             <div style={{ width: '100%', height: '100vh' }}>
                 <div style={{ height: '30px' }}>
+                    <span style={{ marginRight: 20 }}><Switch checked={this.state.unitPriceGt20} onChange={() => this.setState({ unitPriceGt20: !this.state.unitPriceGt20 })} /> {`UnitPrice > 20`}</span>
                     <FilterPanel filterDefs={this.state.filterDefs}
                         dataSources={this.state.dataSources}
                         filterTypes={this.state.filterTypes}

@@ -7,9 +7,9 @@ import { Switch } from 'antd';
 import 'ag-grid-community/dist/styles/ag-grid.css';
 import 'ag-grid-community/dist/styles/ag-theme-balham.css';
 import moment from "moment";
-import {ProtonState, AgGridStateProvider, FilterPanel, AntTagFilterPanelStateProvider, oDataDataSource} from 'proton-state';
-//import {localeText} from 'proton-state/dist/antd-tag-filter-panel/locale/ru'
+import {ProtonState, AgGridStateProvider, FilterPanel, AntTagFilterPanelStateProvider, oDataDataSource, WrappedList} from 'proton-state';
 import {date2Def} from "./FilterDate2";
+//import {localeText} from 'proton-state/dist/antd-tag-filter-panel/locale/ru'
 
 export class AgGridExample extends PureComponent {
     constructor(props) {
@@ -19,9 +19,12 @@ export class AgGridExample extends PureComponent {
                 { headerName: "OrderId", field: "Order.OrderID", filter: 'agNumberColumnFilter' },
                 { headerName: "OrderDate", field: "Order.OrderDate", type: 'dateColumn' },
                 { headerName: "Product", field: "Product.ProductName", filter: 'agTextColumnFilter' },
+                { headerName: "CustomerID", field: "Order.CustomerID", filter: 'agTextColumnFilter' },
                 { headerName: "Quantity", field: "Quantity", filter: 'agNumberColumnFilter' },
-                { headerName: "UnitPrice", field: "UnitPrice", filter: 'agNumberColumnFilter' },
-                { headerName: "Discount", field: "Discount", filter: 'agNumberColumnFilter' },
+                { headerName: "Price & Dicount", children: [
+                    { headerName: "UnitPrice", field: "UnitPrice", filter: 'agNumberColumnFilter' },
+                    { headerName: "Discount", field: "Discount", filter: 'agNumberColumnFilter', columnGroupShow: 'open' }
+                ]}                    
             ],
             defaultColDef: {
                 sortable: true
@@ -44,6 +47,7 @@ export class AgGridExample extends PureComponent {
                 {
                     name: 'Category', title: 'Category', type: 'select',
                     fieldName: 'Product/CategoryID',
+                    single: true,
                     option: {
                         key: 'CategoryID',
                         label: 'CategoryName',
@@ -62,12 +66,32 @@ export class AgGridExample extends PureComponent {
                         //count: 20,
                         labelFunc: ({value}) => <div><b>{value.ProductName}</b><br/>{value.Category.CategoryName}</div>
                     },
-                    template: ({ filterDef, value, valueProps }) => !valueProps ? null : `${filterDef.title} = ${valueProps.options.map(e => `${e.ProductName}`).join(', ')}`,
+                    template: ({ filterDef, value, valueProps }) => !valueProps ? null
+                        : <React.Fragment>{filterDef.title} = <WrappedList list={valueProps.options.map(e => `${e.ProductName}`)} length={2} /></React.Fragment>,
                     dataSource: {
                         //name: 'odata',
                         entityName: 'Products',
                         filter: ({ filters }) => !filters.Category ? null : `CategoryID eq ${filters.Category}`,
-                        expand: ['Category']
+                        expand: ['Category($select=CategoryName)']
+                        //searchFields: ['Name', "Code"]
+                    }
+                },
+                {
+                    name: 'Customer', title: 'Customer', type: 'select',
+                    fieldName: 'Order/CustomerID',
+                    keyType: 'string',
+                    preLoad: true,
+                    onlyUnique: true, // show unique
+                    //debounce: false,
+                    //debounceTimeout: 500,
+                    option: {
+                        key: 'CustomerID',
+                        label: 'CustomerID'
+                    },
+                    dataSource: {
+                        //name: 'odata',
+                        entityName: 'Orders',
+                        orderby: ["CustomerID"]
                         //searchFields: ['Name', "Code"]
                     }
                 }
@@ -116,6 +140,7 @@ export class AgGridExample extends PureComponent {
     }
 
     onStateChange = (props) => {
+        if (!this.gridApi) return;
         let { stateProvider } = props;
         if (!stateProvider || stateProvider.api !== this.gridApi) this.gridApi.purgeServerSideCache([]);
     }
@@ -124,6 +149,7 @@ export class AgGridExample extends PureComponent {
         this.gridApi = params.api;
         this.protonState.addStateProvider(new AgGridStateProvider({
             api: this.gridApi,
+            columnApi: params.columnApi,
             columnDefs: {
                 "Product.ProductName": {
                     stateName: 'ProductName'
@@ -164,10 +190,16 @@ export class AgGridExample extends PureComponent {
         );
     };
 
+    onPaste = async (e) => {
+        const str = await e.clipboardData.getData('Text');
+        this.protonState.setFromString(str);
+        window.location.reload();
+    };
+
     render() {
         return (
-            <div style={{ width: '100%', height: '100vh' }}>
-                <div style={{ height: '30px' }}>
+            <div style={{ width: '100%', height: '100vh' }} onPaste={this.onPaste}>
+                <div style={{ height: '65px' }}>
                     <span style={{ marginRight: 20 }}><Switch checked={this.state.unitPriceGt20} onChange={() => this.setState({ unitPriceGt20: !this.state.unitPriceGt20 })} /> {`UnitPrice > 20`}</span>
                     <FilterPanel filterDefs={this.state.filterDefs}
                         dataSources={this.state.dataSources}
@@ -175,9 +207,15 @@ export class AgGridExample extends PureComponent {
                         //localeText={localeText}
                         onReady={({ api }) => this.onFilterReady(api)}
                     />
+                    <br/>
+                    <button onClick={() => {this.gridApi.setFilterModel(null); }}>Clear aggrid filters</button>
+                    <button onClick={() => {this.protonState.clear(); window.location.reload();}}>Clear all state</button>
+                    <button onClick={() => {this.protonState.clear('LocalStorage'); window.location.reload();}}>Clear local storage state</button>
+                    <button onClick={() => {this.protonState.copyToClipboard();}}>Copy to clipboard</button>
+                    <input type="text" onPaste={this.onPaste} value="Set from clipboard (Paste in field)" style={{width: 300}} readOnly={true}></input>
                 </div>
 
-                <div style={{ height: 'calc(100% - 30px)' }}>
+                <div style={{ height: 'calc(100% - 65px)' }}>
                     <div
                         style={{
                             height: '100%',
